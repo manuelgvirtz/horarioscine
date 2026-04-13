@@ -1,0 +1,60 @@
+name: Scrape Prices
+
+on:
+  schedule:
+    # 10:00 ART (13:00 UTC) and 18:00 ART (21:00 UTC), daily
+    - cron: "3 13 * * *"
+    - cron: "3 21 * * *"
+  workflow_dispatch: # manual trigger from Actions tab
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Static/manual prices (idempotent — safe to re-run)
+      - name: Seed static prices
+        run: npx tsx scripts/seed-prices.ts
+
+      # Per-chain scrapers — run sequentially to avoid overwhelming targets
+      - name: Scrape Atlas prices
+        run: npx tsx scripts/fetch-atlas-prices.ts
+
+      - name: Scrape Cinemark prices
+        run: npx tsx scripts/fetch-cinemark-prices.ts
+
+      - name: Scrape Cinepolis prices
+        run: npx tsx scripts/fetch-cinepolis-prices.ts
+
+      - name: Scrape Multiplex prices
+        run: npx tsx scripts/fetch-multiplex-prices.ts
+
+      - name: Scrape Cacodelphia prices
+        run: npx tsx scripts/fetch-cacodelphia-prices.ts
+
+      - name: Scrape Cine Cosmos prices
+        run: npx tsx scripts/fetch-cinecosmos-prices.ts
+
+      # Upload any debug HTML dumps produced by failing scrapers so we can
+      # inspect what each site returned without re-running CI.
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-debug
+          path: /tmp/*-debug.html
+          if-no-files-found: ignore
+          retention-days: 7

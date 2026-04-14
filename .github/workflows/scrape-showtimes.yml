@@ -71,6 +71,15 @@ jobs:
         run: npx tsx scripts/fetch-sanmartin.ts
         continue-on-error: true
 
+      # After every scrape pass, merge any duplicate movie rows that the
+      # scrapers created (e.g. "The Monkey" vs "The Monkey (2025)" vs "El
+      # Mono" — different normalised titles end up as separate movie rows).
+      # dedup-movies.ts transfers showtimes to the best canonical row and
+      # deletes the extras.
+      - name: Dedup movies
+        run: npx tsx scripts/dedup-movies.ts
+        continue-on-error: true
+
       # Upload any debug HTML dumps produced by failing scrapers so we can
       # inspect what each site returned without re-running CI.
       - name: Upload debug artifacts

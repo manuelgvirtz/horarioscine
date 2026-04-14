@@ -1,3 +1,5 @@
+import { pgTable, text, integer, serial, real, index, uniqueIndex } from "drizzle-orm/pg-core";
+
 export const cinemas = pgTable("cinemas", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),

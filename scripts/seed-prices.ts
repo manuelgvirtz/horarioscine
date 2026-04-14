@@ -246,5 +246,11 @@ async function main() {
 
 main().catch(e => {
   console.error(`\x1b[31m✗\x1b[0m Error:`, e.message);
+  if (e.cause) {
+    console.error(`\x1b[31m  Cause:\x1b[0m`, e.cause);
+  }
+  if (e.stack) {
+    console.error(`\x1b[90m${e.stack}\x1b[0m`);
+  }
   process.exit(1);
 });

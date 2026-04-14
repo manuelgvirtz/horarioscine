@@ -245,12 +245,15 @@ async function main() {
 }
 
 main().catch(e => {
-  console.error(`\x1b[31m✗\x1b[0m Error:`, e.message);
-  if (e.cause) {
-    console.error(`\x1b[31m  Cause:\x1b[0m`, e.cause);
-  }
-  if (e.stack) {
-    console.error(`\x1b[90m${e.stack}\x1b[0m`);
-  }
+  console.error(`\x1b[31m✗\x1b[0m Error caught in main().catch:`);
+  console.error(`  typeof:`, typeof e);
+  console.error(`  constructor:`, e?.constructor?.name);
+  console.error(`  message:`, e?.message);
+  console.error(`  cause:`, e?.cause);
+  console.error(`  code:`, (e as { code?: unknown })?.code);
+  console.error(`  stack:`, e?.stack);
+  console.error(`  full object (inspect):`);
+  console.error(require("util").inspect(e, { depth: 4, colors: false }));
+  console.error(`  JSON:`, JSON.stringify(e, Object.getOwnPropertyNames(e ?? {}), 2));
   process.exit(1);
 });

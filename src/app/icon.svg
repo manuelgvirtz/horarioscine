@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="96" fill="#1c2130"/>
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="96" fill="none" stroke="#4DC8E8" stroke-width="5"/>
+
+  <!-- C-shape: 3 concentric arcs opening to the right -->
+  <path d="M 162 62 A 72 72 0 1 0 162 138" fill="none" stroke="#4DC8E8" stroke-width="9" stroke-linecap="round"/>
+  <path d="M 152 70 A 57 57 0 1 0 152 130" fill="none" stroke="#4DC8E8" stroke-width="6" stroke-linecap="round" opacity="0.65"/>
+  <path d="M 142 78 A 42 42 0 1 0 142 122" fill="none" stroke="#4DC8E8" stroke-width="5" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- Film sprocket dots on the left side of the C -->
+  <circle cx="40" cy="68" r="6.5" fill="#4DC8E8" opacity="0.75"/>
+  <circle cx="40" cy="87" r="6.5" fill="#4DC8E8" opacity="0.75"/>
+  <circle cx="40" cy="106" r="6.5" fill="#4DC8E8" opacity="0.75"/>
+  <circle cx="40" cy="125" r="6.5" fill="#4DC8E8" opacity="0.75"/>
+
+  <!-- White film-frame strips on the right opening of the C -->
+  <rect x="157" y="63" width="18" height="7" rx="2" fill="white" opacity="0.9"/>
+  <rect x="157" y="76" width="18" height="7" rx="2" fill="white" opacity="0.9"/>
+  <rect x="157" y="117" width="18" height="7" rx="2" fill="white" opacity="0.9"/>
+  <rect x="157" y="130" width="18" height="7" rx="2" fill="white" opacity="0.9"/>
+
+  <!-- Central golden sun -->
+  <g transform="translate(100,100)">
+    <!-- 16 rays -->
+    <line x1="0" y1="-24" x2="0" y2="-30" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="11.5" y1="-20.9" x2="14.5" y2="-26.2" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="20.9" y1="-11.5" x2="26.2" y2="-14.5" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="24" y1="0" x2="30" y2="0" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="20.9" y1="11.5" x2="26.2" y2="14.5" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="11.5" y1="20.9" x2="14.5" y2="26.2" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="0" y1="24" x2="0" y2="30" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-11.5" y1="20.9" x2="-14.5" y2="26.2" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="-20.9" y1="11.5" x2="-26.2" y2="14.5" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="-24" y1="0" x2="-30" y2="0" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-20.9" y1="-11.5" x2="-26.2" y2="-14.5" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="-11.5" y1="-20.9" x2="-14.5" y2="-26.2" stroke="#F5C030" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Diagonal cardinal rays -->
+    <line x1="17" y1="-17" x2="21" y2="-21" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="17" y1="17" x2="21" y2="21" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-17" y1="17" x2="-21" y2="21" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-17" y1="-17" x2="-21" y2="-21" stroke="#F5C030" stroke-width="3" stroke-linecap="round"/>
+    <!-- Sun disc with gradient feel -->
+    <circle cx="0" cy="0" r="16" fill="#F5C030"/>
+    <circle cx="0" cy="0" r="11" fill="#E8A020"/>
+  </g>
+</svg>

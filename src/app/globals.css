@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Global focus-visible ring ────────────────────────────────────────
+   Tailwind preflight strips the browser default outline. Restore a
+   consistent, brand-coloured ring for keyboard users on every
+   interactive element that doesn't define its own focus style.        */
+@layer base {
+  :focus-visible {
+    outline: 2px solid theme('colors.primary');
+    outline-offset: 2px;
+    border-radius: theme('borderRadius.DEFAULT');
+  }
+
+  /* Slightly tighter ring on pill-shaped buttons */
+  button:focus-visible,
+  a:focus-visible {
+    outline-offset: 3px;
+  }
+}
+
+/* ── Reduced-motion ────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.fill-1 {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hero-gradient {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, theme('colors.surface') 40%, transparent) 0%,
+    theme('colors.surface') 100%
+  );
+}
+
+.hero-gradient-mobile {
+  background: linear-gradient(
+    to top,
+    theme('colors.surface-container-lowest') 0%,
+    color-mix(in srgb, theme('colors.surface-container-lowest') 88%, transparent) 45%,
+    color-mix(in srgb, theme('colors.surface-container-lowest') 30%, transparent) 75%,
+    transparent 100%
+  );
+}
+
+.cta-gradient {
+  background: linear-gradient(135deg, theme('colors.primary-container') 0%, theme('colors.primary') 100%);
+}

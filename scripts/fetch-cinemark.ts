@@ -13,7 +13,7 @@
 
 import { db, closeDb, getCurrentDebutWeek } from "./db";
 import { cinemas, movies, showtimes } from "../src/db/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, sql, gte } from "drizzle-orm";
 
 // ── Colores ───────────────────────────────────────────────────────────
 const c = { reset: "\x1b[0m", bold: "\x1b[1m", green: "\x1b[32m", yellow: "\x1b[33m", red: "\x1b[31m", cyan: "\x1b[36m", gray: "\x1b[90m" };
@@ -298,6 +298,22 @@ async function main() {
     console.log(`${c.gray}Fechas: ${dates[0]} → ${dates[dates.length - 1]} | Películas nuevas: ${newMovies}${c.reset}\n`);
     await closeDb();
     return;
+  }
+
+  // Wipe existing Cinemark showtimes from today onwards before inserting the
+  // fresh batch. onConflictDoNothing only dedupes identical rows — it never
+  // removes rows whose source session has been cancelled or rescheduled, so
+  // without this DELETE, stale phantom showtimes would accumulate forever.
+  // We restrict to `date >= from` so historical rows (useful for analytics)
+  // are preserved.
+  if (cinemarkIds.length > 0) {
+    console.log(`\n${info} Limpiando horarios obsoletos de ${cinemarkIds.length} cines Cinemark (desde ${from})…`);
+    await db.delete(showtimes).where(
+      and(
+        inArray(showtimes.cinemaId, cinemarkIds),
+        gte(showtimes.date, from),
+      )
+    );
   }
 
   // Insert in batches (upsert — skip duplicates)

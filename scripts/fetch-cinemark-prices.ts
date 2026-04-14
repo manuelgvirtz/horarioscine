@@ -72,7 +72,7 @@ function mapFormat(title: string): string | null {
   const t = title.toLowerCase();
   if (t.startsWith("salas 2d")) return "2D";
   if (t.startsWith("salas 3d")) return "3D";
-  if (t.startsWith("salas 4d")) return "4DX";
+  if (t.startsWith("salas 4d")) return "4D";
   if (t.startsWith("salas xd 2d")) return "XD";
   if (t.startsWith("salas imax")) return "IMAX";
   return null; // DBOX, PREMIUM, COMFORT, XD 3D → skip

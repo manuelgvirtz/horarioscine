@@ -86,14 +86,14 @@ function capitalize(s: string): string {
   return s.toLowerCase().replace(/(?:^|\s|:|-)\S/g, ch => ch.toUpperCase());
 }
 
-// sessionDateTime is UTC — convert to BsAs local time for time display
-function utcToLocalTime(utcStr: string): string {
-  return new Date(utcStr).toLocaleTimeString("en-GB", {
-    timeZone: TZ,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+// The BFF tags sessionDateTime with "Z" (UTC) but the HH:MM actually
+// represents local ART time already — parsing it as UTC and converting to
+// ART erroneously subtracts another 3 hours (observed: app shows 19:00 for
+// a session the cinema runs at 22:00). Extract HH:MM from the ISO string
+// directly, with no Date parsing or TZ math.
+function utcToLocalTime(isoStr: string): string {
+  const m = isoStr.match(/T(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : "00:00";
 }
 
 // ── Theater zone/city mapping ─────────────────────────────────────────

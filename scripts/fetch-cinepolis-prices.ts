@@ -33,29 +33,61 @@ const SOURCE      = PRICES_URL;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /**
- * Fetch the precios page through a real Chromium browser.
+ * Fetch the precios page through a real Chromium browser with basic stealth.
  *
  * curl gets blocked by Cloudflare's TLS fingerprinting (JA3/JA4) regardless
- * of how many headers we spoof, because the TLS ClientHello itself is
- * distinctive. A real browser clears the challenge, so we use Playwright.
+ * of how many headers we spoof. A plain Playwright launch also gets blocked
+ * because Cloudflare detects `navigator.webdriver === true` and other
+ * automation-flavoured fingerprints. This version:
+ *   - disables the AutomationControlled blink feature
+ *   - overrides navigator.webdriver to undefined
+ *   - waits for any Cloudflare interstitial ("Just a moment…" / "Attention
+ *     Required") to clear before returning
  *
- * Playwright is loaded with dynamic import so this file still parses even if
- * the package isn't installed — useful for local dev where only the Cinépolis
- * step needs it.
+ * If Cloudflare is serving a hard-block page (error 1020) because the CI
+ * runner's IP is on a blocklist, the waitForFunction call below will time
+ * out and the returned HTML will still be the block page — fall back to
+ * curl-impersonate or a residential-proxy service in that case.
  */
 async function fetchHtml(url: string): Promise<string> {
   const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--disable-blink-features=AutomationControlled"],
+  });
   try {
     const context = await browser.newContext({
       userAgent: UA,
       locale: "es-AR",
       viewport: { width: 1280, height: 800 },
+      extraHTTPHeaders: {
+        "Accept-Language": "es-AR,es;q=0.9,en;q=0.8",
+      },
+    });
+    // Stealth: strip a couple of obvious automation tells.
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+      // @ts-expect-error — chrome-only runtime object Cloudflare checks for
+      window.chrome = { runtime: {} };
     });
     const page = await context.newPage();
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    // Give any late-loading content a moment; don't fail if networkidle never
-    // resolves (some sites keep long-polling connections open).
+
+    // If we landed on a Cloudflare interstitial, wait for it to clear.
+    const initialTitle = await page.title();
+    if (/Attention Required|Just a moment|Checking your browser/i.test(initialTitle)) {
+      console.log(`  (Cloudflare interstitial detected: "${initialTitle}" — waiting up to 30s)`);
+      try {
+        await page.waitForFunction(
+          () => !/Attention Required|Just a moment|Checking your browser/i.test(document.title),
+          { timeout: 30_000 }
+        );
+      } catch {
+        // Timed out — probably a hard block, not a challenge. Caller will
+        // detect this via the missing sentinel.
+      }
+    }
+
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
     return await page.content();
   } finally {

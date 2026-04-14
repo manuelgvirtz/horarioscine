@@ -1,0 +1,83 @@
+name: Scrape Showtimes
+
+on:
+  schedule:
+    # Daily at 08:00 ART (11:00 UTC) — fresh showtimes before morning traffic.
+    # Showtime data changes less often than prices; once a day is plenty.
+    - cron: "7 11 * * *"
+  workflow_dispatch: # manual trigger from Actions tab
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Comerciales ─ cadenas grandes. Run sequentially to keep load polite.
+      - name: Scrape Atlas showtimes
+        run: npx tsx scripts/fetch-atlas.ts
+        continue-on-error: true
+
+      - name: Scrape Cinemark showtimes
+        run: npx tsx scripts/fetch-cinemark.ts
+        continue-on-error: true
+
+      - name: Scrape Showcase showtimes
+        run: npx tsx scripts/fetch-showcase.ts
+        continue-on-error: true
+
+      - name: Scrape Multiplex showtimes
+        run: npx tsx scripts/fetch-multiplex.ts
+        continue-on-error: true
+
+      - name: Scrape Cinepolis showtimes
+        run: npx tsx scripts/fetch-cinepolis.ts
+        continue-on-error: true
+
+      # Independientes ─ salas chicas. Each one is small, so continue on error.
+      - name: Scrape Gaumont showtimes
+        run: npx tsx scripts/fetch-gaumont.ts
+        continue-on-error: true
+
+      - name: Scrape MALBA showtimes
+        run: npx tsx scripts/fetch-malba.ts
+        continue-on-error: true
+
+      - name: Scrape York showtimes
+        run: npx tsx scripts/fetch-york.ts
+        continue-on-error: true
+
+      - name: Scrape Cacodelphia showtimes
+        run: npx tsx scripts/fetch-cacodelphia.ts
+        continue-on-error: true
+
+      - name: Scrape Cine Cosmos showtimes
+        run: npx tsx scripts/fetch-cinecosmos.ts
+        continue-on-error: true
+
+      - name: Scrape San Martín showtimes
+        run: npx tsx scripts/fetch-sanmartin.ts
+        continue-on-error: true
+
+      # Upload any debug HTML dumps produced by failing scrapers so we can
+      # inspect what each site returned without re-running CI.
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: showtimes-debug
+          path: /tmp/*-debug.html
+          if-no-files-found: ignore
+          retention-days: 7

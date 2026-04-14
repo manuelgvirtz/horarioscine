@@ -69,6 +69,29 @@ function parseDate(s: string): string {
   return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
 }
 
+/**
+ * Multiplex embeds showtimes in the page JSON with the `hora` field in what
+ * looks like UTC (e.g. "12:10" for a session the cinema actually runs at
+ * 15:10 ART). Shift forward by 3 hours to get the real local time, rolling
+ * the date forward when the session crosses midnight.
+ */
+function shiftPlus3h(dateStr: string, hhmm: string): { date: string; time: string } {
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  const [h, mi] = hhmm.split(":").map(Number);
+  const totalMinutes = h * 60 + mi + 3 * 60;
+  const daysOverflow = Math.floor(totalMinutes / (24 * 60));
+  const dayMinutes = totalMinutes - daysOverflow * (24 * 60);
+  const newH = Math.floor(dayMinutes / 60);
+  const newM = dayMinutes % 60;
+  const dt = new Date(y, mo - 1, d + daysOverflow);
+  const newDate =
+    `${dt.getFullYear()}-` +
+    `${String(dt.getMonth() + 1).padStart(2, "0")}-` +
+    `${String(dt.getDate()).padStart(2, "0")}`;
+  const newTime = `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
+  return { date: newDate, time: newTime };
+}
+
 // "MM.DD.YYYY" → "YYYYMMDD" (for booking URL)
 function dateForUrl(s: string): string {
   const [m, d, y] = s.split(".");
@@ -201,12 +224,13 @@ async function main() {
       const cinema = cinemaByName.get(normalize(complexInfo.name));
       if (!cinema) continue;
 
-      const date     = parseDate(f.dia);
+      const rawDate  = parseDate(f.dia);
+      const shifted  = shiftPlus3h(rawDate, f.hora);
       const format   = FORMAT_MAP[f.formato] ?? "2D";
       const language = parseLanguage(f.idioma);
       const bookingUrl = `https://ventas.cinemultiplex.com.ar/funcion?df=${f.complejo}-${f.pelicula_id}-${f.id}-${dateForUrl(f.dia)}`;
 
-      toInsert.push({ movieId: movie.id, cinemaId: cinema.id, date, time: f.hora, format, language, bookingUrl, scrapedAt});
+      toInsert.push({ movieId: movie.id, cinemaId: cinema.id, date: shifted.date, time: shifted.time, format, language, bookingUrl, scrapedAt});
       complexCounts[complexInfo.name] = (complexCounts[complexInfo.name] ?? 0) + 1;
     }
   }

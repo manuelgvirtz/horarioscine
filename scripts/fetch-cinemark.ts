@@ -86,7 +86,10 @@ function capitalize(s: string): string {
   return s.toLowerCase().replace(/(?:^|\s|:|-)\S/g, ch => ch.toUpperCase());
 }
 
-// sessionDateTime is UTC — convert to BsAs local time for time display
+// sessionDateTime is tagged with "Z" (UTC) in the BFF but the HH:MM actually
+// represents local ART time, so toLocaleTimeString("America/Argentina/...")
+// erroneously subtracts another 3 hours. Shifting +3h to the converted time
+// (with date rollover when it crosses midnight) recovers the real showtime.
 function utcToLocalTime(utcStr: string): string {
   return new Date(utcStr).toLocaleTimeString("en-GB", {
     timeZone: TZ,
@@ -94,6 +97,24 @@ function utcToLocalTime(utcStr: string): string {
     minute: "2-digit",
     hour12: false,
   });
+}
+
+/** Shift "HH:MM" on `dateStr` forward by 3 hours, rolling the date if needed. */
+function shiftPlus3h(dateStr: string, hhmm: string): { date: string; time: string } {
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  const [h, mi] = hhmm.split(":").map(Number);
+  const totalMinutes = h * 60 + mi + 3 * 60;
+  const daysOverflow = Math.floor(totalMinutes / (24 * 60));
+  const dayMinutes = totalMinutes - daysOverflow * (24 * 60);
+  const newH = Math.floor(dayMinutes / 60);
+  const newM = dayMinutes % 60;
+  const dt = new Date(y, mo - 1, d + daysOverflow);
+  const newDate =
+    `${dt.getFullYear()}-` +
+    `${String(dt.getMonth() + 1).padStart(2, "0")}-` +
+    `${String(dt.getDate()).padStart(2, "0")}`;
+  const newTime = `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
+  return { date: newDate, time: newTime };
 }
 
 // ── Theater zone/city mapping ─────────────────────────────────────────
@@ -257,12 +278,13 @@ async function main() {
       let format     = FORMAT_MAP[s.sessionFormat] ?? FORMAT_MAP[s.formats?.[0]?.name] ?? "2D";
       if (format === "IMAX" && NO_IMAX_THEATERS.has(t.id)) format = "2D";
       const language = parseLanguage(s.language?.shortName);
-      const time     = utcToLocalTime(s.sessionDateTime);
+      const rawTime  = utcToLocalTime(s.sessionDateTime);
+      const shifted  = shiftPlus3h(s.sessionDisplayDate, rawTime);
       const bookingUrl = "https://www.cinemark.com.ar";
 
       toInsert.push({
         movieId: movie.id, cinemaId: cinema.id,
-        date: s.sessionDisplayDate, time, format, language,
+        date: shifted.date, time: shifted.time, format, language,
         bookingUrl, scrapedAt,
       });
       count++;

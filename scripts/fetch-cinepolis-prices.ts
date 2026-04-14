@@ -9,7 +9,6 @@
  * Run with:  npx tsx scripts/fetch-cinepolis-prices.ts
  */
 
-import { execSync } from "child_process";
 import { db, closeDb } from "./db";
 import { cinemas, prices } from "../src/db/schema";
 import { eq, and, isNotNull, sql } from "drizzle-orm";
@@ -33,29 +32,35 @@ const scrapedAt   = new Date().toISOString();
 const SOURCE      = PRICES_URL;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function curlGet(url: string): string {
-  // Full browser-like header set. Cloudflare fingerprints requests by checking
-  // for the presence & ordering of Sec-Ch-Ua / Sec-Fetch-* / Accept-Encoding
-  // headers; curl omits them by default, which is a strong bot signal.
-  // --compressed tells curl to decode gzip/br responses transparently.
-  const headers = [
-    `-H "User-Agent: ${UA}"`,
-    `-H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"`,
-    `-H "Accept-Language: es-AR,es;q=0.9,en;q=0.8"`,
-    `-H "Accept-Encoding: gzip, deflate, br"`,
-    `-H "Cache-Control: no-cache"`,
-    `-H "Pragma: no-cache"`,
-    `-H "Sec-Ch-Ua: \\"Chromium\\";v=\\"124\\", \\"Google Chrome\\";v=\\"124\\", \\"Not-A.Brand\\";v=\\"99\\""`,
-    `-H "Sec-Ch-Ua-Mobile: ?0"`,
-    `-H "Sec-Ch-Ua-Platform: \\"Windows\\""`,
-    `-H "Sec-Fetch-Dest: document"`,
-    `-H "Sec-Fetch-Mode: navigate"`,
-    `-H "Sec-Fetch-Site: none"`,
-    `-H "Sec-Fetch-User: ?1"`,
-    `-H "Upgrade-Insecure-Requests: 1"`,
-  ].join(" ");
-  const cmd = `curl -sL --compressed ${headers} "${url}"`;
-  return execSync(cmd, { encoding: "utf8", maxBuffer: 5 * 1024 * 1024 });
+/**
+ * Fetch the precios page through a real Chromium browser.
+ *
+ * curl gets blocked by Cloudflare's TLS fingerprinting (JA3/JA4) regardless
+ * of how many headers we spoof, because the TLS ClientHello itself is
+ * distinctive. A real browser clears the challenge, so we use Playwright.
+ *
+ * Playwright is loaded with dynamic import so this file still parses even if
+ * the package isn't installed — useful for local dev where only the Cinépolis
+ * step needs it.
+ */
+async function fetchHtml(url: string): Promise<string> {
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({
+      userAgent: UA,
+      locale: "es-AR",
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    // Give any late-loading content a moment; don't fail if networkidle never
+    // resolves (some sites keep long-polling connections open).
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    return await page.content();
+  } finally {
+    await browser.close();
+  }
 }
 
 function stripTags(s: string): string {
@@ -202,8 +207,8 @@ async function main() {
   console.log(`${info} Fuente: ${c.cyan}${PRICES_URL}${c.reset}\n`);
 
   // ── Fetch page ──────────────────────────────────────────────────────────────
-  console.log(`${info} Descargando página de precios...`);
-  const html = curlGet(PRICES_URL);
+  console.log(`${info} Descargando página de precios (vía Playwright)...`);
+  const html = await fetchHtml(PRICES_URL);
 
   // Diagnostic check — case-insensitive + debug dump if sentinel missing
   const hasSentinel = /entrada\s+general/i.test(html);

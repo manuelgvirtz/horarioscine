@@ -36,6 +36,14 @@ jobs:
       - name: Scrape Cinemark prices
         run: npx tsx scripts/fetch-cinemark-prices.ts
 
+      # Cinépolis is behind Cloudflare and blocks curl by TLS fingerprint,
+      # so fetch-cinepolis-prices.ts drives a real Chromium via Playwright.
+      # Install as --no-save so we don't have to touch package-lock.json.
+      - name: Install Playwright for Cinépolis
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
       - name: Scrape Cinepolis prices
         run: npx tsx scripts/fetch-cinepolis-prices.ts
 

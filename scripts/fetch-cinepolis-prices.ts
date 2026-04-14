@@ -34,7 +34,27 @@ const SOURCE      = PRICES_URL;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function curlGet(url: string): string {
-  const cmd = `curl -sL -A "${UA}" "${url}"`;
+  // Full browser-like header set. Cloudflare fingerprints requests by checking
+  // for the presence & ordering of Sec-Ch-Ua / Sec-Fetch-* / Accept-Encoding
+  // headers; curl omits them by default, which is a strong bot signal.
+  // --compressed tells curl to decode gzip/br responses transparently.
+  const headers = [
+    `-H "User-Agent: ${UA}"`,
+    `-H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"`,
+    `-H "Accept-Language: es-AR,es;q=0.9,en;q=0.8"`,
+    `-H "Accept-Encoding: gzip, deflate, br"`,
+    `-H "Cache-Control: no-cache"`,
+    `-H "Pragma: no-cache"`,
+    `-H "Sec-Ch-Ua: \\"Chromium\\";v=\\"124\\", \\"Google Chrome\\";v=\\"124\\", \\"Not-A.Brand\\";v=\\"99\\""`,
+    `-H "Sec-Ch-Ua-Mobile: ?0"`,
+    `-H "Sec-Ch-Ua-Platform: \\"Windows\\""`,
+    `-H "Sec-Fetch-Dest: document"`,
+    `-H "Sec-Fetch-Mode: navigate"`,
+    `-H "Sec-Fetch-Site: none"`,
+    `-H "Sec-Fetch-User: ?1"`,
+    `-H "Upgrade-Insecure-Requests: 1"`,
+  ].join(" ");
+  const cmd = `curl -sL --compressed ${headers} "${url}"`;
   return execSync(cmd, { encoding: "utf8", maxBuffer: 5 * 1024 * 1024 });
 }
 

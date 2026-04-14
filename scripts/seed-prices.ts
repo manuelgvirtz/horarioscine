@@ -226,6 +226,15 @@ async function main() {
     and(eq(prices.chain, "independiente"), inArray(prices.cinemaId, SEEDED_CINEMA_IDS))
   );
 
+  // Wipe stale per-cinema Cinemark rows left over from fetch-cinemark-prices.ts
+  // (the scraper is disabled — see .github/workflows/scrape-prices.yml — because
+  // it was emitting wrong values. The chain-wide seed below is the source of
+  // truth now, so per-cinema rows would incorrectly override it in the UI.)
+  console.log(`${info} Limpiando per-cinema Cinemark rows obsoletos…`);
+  await db.delete(prices).where(
+    and(eq(prices.chain, "cinemark"), sql`${prices.cinemaId} IS NOT NULL`)
+  );
+
   const BATCH = 100;
   let inserted = 0;
   for (let i = 0; i < SEED_DATA.length; i += BATCH) {

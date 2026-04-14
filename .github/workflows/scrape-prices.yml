@@ -33,7 +33,13 @@ jobs:
       - name: Scrape Atlas prices
         run: npx tsx scripts/fetch-atlas-prices.ts
 
-      - name: Scrape Cinemark prices
+      # Cinemark scraper is disabled — the API parsing was producing incorrect
+      # per-cinema values that overrode the correct chain-wide seed prices in
+      # the UI. Until we debug the parser (or decide we don't need per-cinema
+      # granularity), seed-prices.ts is the source of truth for Cinemark.
+      # seed-prices.ts now also wipes stale per-cinema Cinemark rows on each run.
+      - name: Scrape Cinemark prices (disabled — wrong values, using seed)
+        if: false
         run: npx tsx scripts/fetch-cinemark-prices.ts
 
       # Cinépolis is behind Cloudflare's hard-block tier (error 1020) for the
